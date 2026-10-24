@@ -6,7 +6,7 @@ import requests
 import hashlib
 from dotenv import load_dotenv
 from p115client.client import P115Client
-from p115client.tool.upload import multipart_upload_init
+from p115client.tool.upload import upload_init as multipart_upload_init
 from p123client import P123Client
 
 # 加载.env文件中的环境变量

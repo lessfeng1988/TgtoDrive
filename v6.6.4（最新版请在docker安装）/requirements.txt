@@ -1,0 +1,36 @@
+# TgtoDrive v6.6.4 依赖清单（根据源码 import 反推）
+# Python 3.10+（原镜像使用 3.13）
+
+# Web 与基础工具
+Flask
+requests
+python-dotenv
+urllib3
+
+# Telegram 机器人
+pyTelegramBotAPI
+schedule
+
+# 爬虫与解析
+beautifulsoup4
+guessit
+
+# 网盘 SDK（123 / 115，由 ChenyangGao 维护）
+p123client
+p115client
+
+# p123client 的哈希与文件包装依赖
+hashtools
+filewrap
+
+# 天翼云盘登录加密
+pycryptodome
+cryptography
+
+# 异步下载（弹幕等）
+aiohttp
+yarl
+tqdm
+
+# p123client 默认以 HTTP/2 建立 httpx 连接
+h2

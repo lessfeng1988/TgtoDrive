@@ -8,8 +8,9 @@ logger = logging.getLogger(__name__)
 from datetime import datetime
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from p115client.client import P115Client, check_response, normalize_attr_simple
-from p115client.exception import P115OSError, AuthenticationError
+from p115client.client import P115Client, check_response
+from p115client.tool import normalize_attr_simple
+from p115client.exception import P115OSError, P115AuthenticationError as AuthenticationError
 from urllib.parse import urlsplit, parse_qs
 import re
 import schedule
