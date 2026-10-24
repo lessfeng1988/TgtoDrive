@@ -1,0 +1,6 @@
+# Python 编译缓存
+__pycache__/
+*.py[cod]
+
+# 运行期数据（配置、凭据、SQLite、日志）
+v6.6.4*/db/
