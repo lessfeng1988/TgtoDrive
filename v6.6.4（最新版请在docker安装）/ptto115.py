@@ -6,7 +6,7 @@ import requests
 import hashlib
 from dotenv import load_dotenv
 from p115client.client import P115Client
-from p115client.tool.upload import upload_init as multipart_upload_init
+from p115client.tool.upload import upload_init as p115_upload_init
 from p123client import P123Client
 
 # 加载.env文件中的环境变量
@@ -143,6 +143,16 @@ def fast_md5(file_path: str) -> str:
         for chunk in iter(lambda: f.read(65536), b""):
             md5_hash.update(chunk)
     return md5_hash.hexdigest()
+
+
+def fast_sha1(file_path: str) -> str:
+    """快速计算文件SHA1（分块读取，适用于大文件）"""
+    sha1_hash = hashlib.sha1()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            sha1_hash.update(chunk)
+    return sha1_hash.hexdigest()
+
 
 CLIENT_ID = os.getenv("ENV_123_CLIENT_ID", "")
 CLIENT_SECRET = os.getenv("ENV_123_CLIENT_SECRET", "")
@@ -321,17 +331,25 @@ def ptto123process():
                     client_115 = init_115_client()
                     try:
                         logger.info(f"开始尝试115网盘秒传：{file_path}")
-                        upload_result = multipart_upload_init(
-                            client=client_115,
-                            path=file_path,
-                            filename=filename,
+                        if not cache[file_key]['sha1']:
+                            logger.info(f"计算文件SHA1：{file_path}")
+                            cache[file_key]['sha1'] = fast_sha1(file_path)
+                            logger.info(f"已缓存文件SHA1：{file_path} → {cache[file_key]['sha1']}")
+                        else:
+                            logger.info(f"使用缓存的SHA1值：{file_path} → {cache[file_key]['sha1']}")
+
+                        # upload_init 会先尝试秒传；返回 reuse=True（status=2）表示秒传成功，
+                        # 否则返回上传配置信息（status=1，尚未上传文件内容）
+                        upload_result = p115_upload_init(
+                            client_115,
+                            file_path,
+                            pid=PTTO115_UPLOAD_PID,
+                            filesha1=cache[file_key]['sha1'],
                             filesize=filesize,
-                            filesha1=cache[file_key]['sha1'] or '',  # 使用缓存的哈希值或留空让接口自动计算
-                            pid=PTTO115_UPLOAD_PID
+                            filename=filename,
                         )
 
-                        # 处理115网盘秒传结果
-                        if "status" in upload_result:
+                        if upload_result.get("reuse"):
                             logger.info(f"115网盘秒传成功：{file_path}（目标目录ID：{PTTO115_UPLOAD_PID}）")
                             # 发送成功通知（如果配置了Telegram）
                             if TG_BOT_TOKEN and TG_ADMIN_USER_ID:
@@ -343,12 +361,10 @@ def ptto123process():
                             if file_key in attempt_count:
                                 del attempt_count[file_key]
                         else:
-                            logger.warning(f"115网盘秒传未成功：{file_path}，从上传配置信息里获取哈希值并缓存")
-                            # 从上传配置信息里获取哈希值
-                            filesha1 = upload_result.get('filesha1', '')
-                            if filesha1:
-                                cache[file_key]['sha1'] = filesha1
-                                logger.info(f"已缓存文件SHA1值：{file_path} → {filesha1}")
+                            logger.warning(
+                                f"115网盘秒传未成功：{file_path}"
+                                f"（status={upload_result.get('status')}），保留文件等待下次重试"
+                            )
 
                     except Exception as e:
                         logger.error(f"115网盘上传失败,尝试重新初始化客户端：{file_path} → {e}")

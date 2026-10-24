@@ -33,6 +33,8 @@ newest_id = 47
 # 加载.env文件中的环境变量
 load_dotenv(dotenv_path="db/user.env",override=True)
 load_dotenv(dotenv_path="sys.env",override=True)
+# 本地/自建部署时可通过环境变量跳过启动时的强制版本校验
+SKIP_VERSION_CHECK = os.getenv("TGTO123_SKIP_VERSION_CHECK") == "1"
 # 1. 确保日志目录存在
 log_dir = os.path.join("db", "log")
 os.makedirs(log_dir, exist_ok=True)
@@ -4083,7 +4085,10 @@ if __name__ == "__main__":
 
         - 如您继续使用本工具，则视为已完整阅读、理解并接受以上所有声明内容。'''
 
-    while True:
+    if SKIP_VERSION_CHECK:
+        logger.info("已跳过启动版本校验（TGTO123_SKIP_VERSION_CHECK=1）")
+
+    while not SKIP_VERSION_CHECK:
         try:            
             bot.send_message(TG_ADMIN_USER_ID,f"🚀 tgto123：当前版本 {version}\n项目地址：https://github.com/walkingddd/tgto123-public 觉得好用能否帮忙点个小星星\n\n{USE_METHOD}")
             try:
